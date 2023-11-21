@@ -69,6 +69,7 @@ type Props = {
   filterCollection: string | undefined
   sortBy: PortfolioSortingOption
   isLoading?: boolean
+  hideSpam: boolean
   selectedItems: UserToken[]
   isOwner: boolean
   itemView: ItemView
@@ -92,6 +93,7 @@ export const TokenTable = forwardRef<TokenTableRef, Props>(
       isOwner,
       itemView,
       setSelectedItems,
+      hideSpam,
     },
     ref
   ) => {
@@ -111,6 +113,7 @@ export const TokenTable = forwardRef<TokenTableRef, Props>(
       includeTopBid: true,
       includeRawData: true,
       includeAttributes: true,
+      excludeSpam: hideSpam,
     }
 
     const { chain } = useContext(ChainContext)
@@ -125,9 +128,20 @@ export const TokenTable = forwardRef<TokenTableRef, Props>(
       data: tokens,
       fetchNextPage,
       mutate,
+      setSize,
       isFetchingPage,
       isValidating,
-    } = useUserTokens(address, tokenQuery, { revalidateIfStale: true })
+    } = useUserTokens(address, tokenQuery, {
+      revalidateOnMount: true,
+      fallbackData: [],
+    })
+
+    useEffect(() => {
+      mutate()
+      return () => {
+        setSize(1)
+      }
+    }, [])
 
     useEffect(() => {
       const isVisible = !!loadMoreObserver?.isIntersecting
@@ -371,7 +385,7 @@ const TokenTableRow: FC<TokenTableRowProps> = ({
                 {token?.token?.collection?.name}
               </Text>
               <Text style="subtitle2" ellipsify>
-                #{token?.token?.tokenId}
+                {token?.token?.name || `#${token?.token?.tokenId}`}
               </Text>
             </Flex>
           </Flex>
@@ -707,7 +721,7 @@ const TokenTableRow: FC<TokenTableRowProps> = ({
                   />
                 </Flex>
                 <Text style="subtitle2" ellipsify>
-                  #{token?.token?.tokenId}
+                  {token?.token?.name || `#${token?.token?.tokenId}`}
                 </Text>
               </Flex>
             </Flex>
@@ -846,7 +860,7 @@ const TokenTableRow: FC<TokenTableRowProps> = ({
       {isOwner && (
         <TableCell>
           <Flex justify="end" css={{ gap: '$3' }}>
-            {token?.token?.topBid?.price?.amount?.decimal && (
+            {token?.token?.topBid?.price?.amount?.decimal ? (
               <AcceptBid
                 openState={[
                   acceptBidModalOpen,
@@ -875,7 +889,7 @@ const TokenTableRow: FC<TokenTableRowProps> = ({
                 }
                 mutate={mutate}
               />
-            )}
+            ) : null}
 
             <List
               token={token as ReturnType<typeof useTokens>['data'][0]}

@@ -1,6 +1,7 @@
 import {
   Flex,
   FormatCryptoCurrency,
+  Switch,
   Text,
   Tooltip,
 } from 'components/primitives'
@@ -20,7 +21,9 @@ type Collections = ReturnType<typeof useUserCollections>['data']
 
 type Props = {
   open: boolean
+  hideSpam: boolean
   setOpen: (open: boolean) => void
+  setHideSpam: Dispatch<SetStateAction<boolean>>
   collections: Collections
   filterCollection: string | undefined
   setFilterCollection: Dispatch<SetStateAction<string | undefined>>
@@ -40,6 +43,8 @@ export const TokenFilters: FC<Props> = ({
   isOwner,
   scrollToTop,
   loadMoreCollections,
+  hideSpam,
+  setHideSpam,
 }) => {
   if (collections?.length === 0 || collections == null || isLoading) {
     return null
@@ -64,6 +69,13 @@ export const TokenFilters: FC<Props> = ({
         }}
       >
         <Flex direction="column">
+          <Flex css={{ mt: '$2', ml: '$3', gap: '$2' }}>
+            <Text style="subtitle2">Hide Spam</Text>
+            <Switch
+              checked={hideSpam}
+              onCheckedChange={(checked) => setHideSpam(checked)}
+            />
+          </Flex>
           <Text style="subtitle1" css={{ mb: '$2', ml: '$3' }}></Text>
           {collections?.map((collection) => {
             let selected = collection?.collection?.id == filterCollection
@@ -99,14 +111,15 @@ export const TokenFilters: FC<Props> = ({
                       objectFit: 'cover',
                       aspectRatio: '1/1',
                     }}
+                    loading="lazy"
                     loader={({ src }) => src}
                     src={optimizeImage(
                       collection?.collection?.image as string,
-                      250
+                      84
                     )}
                     alt={collection?.collection?.name as string}
-                    width={24}
-                    height={24}
+                    width={42}
+                    height={42}
                   />
                 )}
                 <Flex direction="column" css={{ minWidth: 0 }}>
@@ -120,22 +133,18 @@ export const TokenFilters: FC<Props> = ({
                     >
                       {collection?.collection?.name}
                     </Text>
-                    <OpenSeaVerified
-                      openseaVerificationStatus={
-                        collection?.collection?.openseaVerificationStatus
-                      }
-                    />
                   </Flex>
-                  <Text style="subtitle3" css={{ color: '$gray10' }}>
-                    Owned: {formatNumber(collection?.ownership?.tokenCount)}
-                  </Text>
                 </Flex>
                 <Flex
                   direction="column"
-                  css={{ ml: 'auto', flexShrink: 0, alignItems: 'end' }}
+                  css={{
+                    ml: 'auto',
+                    flexShrink: 0,
+                    alignItems: 'end',
+                    minWidth: 60,
+                  }}
                 >
                   <Flex css={{ gap: '$1' }}>
-                    <Text style="subtitle2">Floor</Text>
                     <FormatCryptoCurrency
                       logoHeight={15}
                       amount={
@@ -144,25 +153,9 @@ export const TokenFilters: FC<Props> = ({
                       address={
                         collection.collection?.floorAskPrice?.currency?.contract
                       }
-                      textStyle="subtitle2"
+                      textStyle="h6"
                     />
                   </Flex>
-                  <Tooltip
-                    sideOffset={2}
-                    side="top"
-                    content={
-                      <Text style="body3" css={{ display: 'block' }}>
-                        24h Floor Price Change
-                      </Text>
-                    }
-                  >
-                    <div>
-                      <PercentChange
-                        value={collection.collection?.volumeChange?.['1day']}
-                        decimals={1}
-                      />
-                    </div>
-                  </Tooltip>
                 </Flex>
               </Flex>
             )

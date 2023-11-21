@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
 import {
   Currency,
-  Listings,
+  Listing,
   useReservoirClient,
 } from '@reservoir0x/reservoir-kit-ui'
 import { Execute } from '@reservoir0x/reservoir-sdk'
@@ -30,7 +30,7 @@ enum BatchListStep {
 }
 
 export type BatchListingData = {
-  listing: Listings[0]
+  listing: Listing
   token: UserToken
 }
 
@@ -49,6 +49,9 @@ type Props = {
   onChainRoyalties: ReturnType<typeof useOnChainRoyalties>['data']
   onCloseComplete?: () => void
 }
+
+const orderFee = process.env.NEXT_PUBLIC_MARKETPLACE_FEE
+const orderFees = orderFee ? [orderFee] : []
 
 const BatchListModal: FC<Props> = ({
   listings,
@@ -160,7 +163,7 @@ const BatchListModal: FC<Props> = ({
 
       const token = `${listing.token.token?.contract}:${listing.token.token?.tokenId}`
 
-      const convertedListing: Listings[0] = {
+      const convertedListing: Listing = {
         token: token,
         weiPrice: (
           parseUnits(`${+listing.price}`, currency.decimals || 18) *
@@ -169,6 +172,10 @@ const BatchListModal: FC<Props> = ({
         orderbook: listing.orderbook,
         orderKind: listing.orderKind,
         quantity: listing.quantity,
+      }
+
+      if (listing.orderbook === 'reservoir') {
+        convertedListing.fees = orderFees
       }
 
       if (expirationTime) {
@@ -185,8 +192,16 @@ const BatchListModal: FC<Props> = ({
         convertedListing.automatedRoyalties = false
         const royaltyData = onChainRoyalty.result as OnChainRoyaltyReturnType
         const royalties = royaltyData[0].map((recipient, i) => {
-          const bps =
-            (parseFloat(formatUnits(royaltyData[1][i], 18)) / 1) * 10000
+          const bps = Math.floor(
+            (parseFloat(
+              formatUnits(
+                royaltyData[1][i],
+                marketplaceChain?.nativeCurrency.decimals || 18
+              )
+            ) /
+              1) *
+              10000
+          )
           return `${recipient}:${bps}`
         })
         if (royalties.length > 0) {

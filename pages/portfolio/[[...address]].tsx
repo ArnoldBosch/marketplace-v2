@@ -63,7 +63,8 @@ const IndexPage: NextPage = () => {
 
   const [activityTypes, setActivityTypes] = useState<ActivityTypes>(['sale'])
   const [activityFiltersOpen, setActivityFiltersOpen] = useState(true)
-  const [tokenFiltersOpen, setTokenFiltersOpen] = useState(true)
+  const [tokenFiltersOpen, setTokenFiltersOpen] = useState(false)
+  const [hideSpam, setHideSpam] = useState<boolean>(true)
   const [filterCollection, setFilterCollection] = useState<string | undefined>(
     undefined
   )
@@ -83,6 +84,7 @@ const IndexPage: NextPage = () => {
 
   let collectionQuery: Parameters<typeof useUserCollections>['1'] = {
     limit: 100,
+    excludeSpam: hideSpam,
   }
 
   const { chain } = useContext(ChainContext)
@@ -97,7 +99,7 @@ const IndexPage: NextPage = () => {
     data: collections,
     isLoading: collectionsLoading,
     fetchNextPage,
-  } = useUserCollections(address as string, collectionQuery)
+  } = useUserCollections(isMounted ? (address as string) : '', collectionQuery)
 
   // Batch listing logic
   const [showListingPage, setShowListingPage] = useState(false)
@@ -159,8 +161,10 @@ const IndexPage: NextPage = () => {
   }, [isSmallDevice, router.asPath])
 
   useEffect(() => {
-    router.query.tab = tabValue
-    router.push(router, undefined, { shallow: true })
+    if (router.query.tab != tabValue) {
+      router.query.tab = tabValue
+      router.push(router, undefined, { shallow: true })
+    }
   }, [tabValue])
 
   if (!isMounted) {
@@ -178,6 +182,10 @@ const IndexPage: NextPage = () => {
             py: 40,
             '@sm': {
               px: '$5',
+            },
+
+            '@xl': {
+              px: '$6',
             },
           }}
         >
@@ -211,23 +219,23 @@ const IndexPage: NextPage = () => {
                         />
                       )}
                       <Flex direction="column" css={{ ml: '$4' }}>
-                        <Text style="h5">
+                        <Text style="h5" as="h5">
                           {resolvedEnsName ? resolvedEnsName : shortAddress}
                         </Text>
                         <CopyText text={address as string}>
                           <Flex align="center" css={{ cursor: 'pointer' }}>
                             <Text
-                              style="subtitle1"
+                              style="subtitle2"
                               color="subtle"
-                              css={{ mr: '$3' }}
+                              css={{ mr: '$1' }}
                             >
                               {shortAddress}
                             </Text>
                             <Box css={{ color: '$gray10' }}>
                               <FontAwesomeIcon
                                 icon={faCopy}
-                                width={16}
-                                height={16}
+                                width={12}
+                                height={12}
                               />
                             </Box>
                           </Flex>
@@ -259,7 +267,6 @@ const IndexPage: NextPage = () => {
                         <TabsTrigger value="activity">Activity</TabsTrigger>
                       </TabsList>
                     </Flex>
-
                     <TabsContent value="items">
                       <Flex
                         css={{
@@ -270,6 +277,8 @@ const IndexPage: NextPage = () => {
                       >
                         {isSmallDevice ? (
                           <MobileTokenFilters
+                            hideSpam={hideSpam}
+                            setHideSpam={setHideSpam}
                             collections={collections}
                             filterCollection={filterCollection}
                             setFilterCollection={setFilterCollection}
@@ -277,6 +286,8 @@ const IndexPage: NextPage = () => {
                           />
                         ) : (
                           <TokenFilters
+                            hideSpam={hideSpam}
+                            setHideSpam={setHideSpam}
                             isLoading={collectionsLoading}
                             isOwner={isOwner}
                             open={tokenFiltersOpen}
@@ -336,6 +347,7 @@ const IndexPage: NextPage = () => {
                             )}
                           </Flex>
                           <TokenTable
+                            hideSpam={hideSpam}
                             ref={tokenTableRef}
                             isLoading={collectionsLoading}
                             address={address}
